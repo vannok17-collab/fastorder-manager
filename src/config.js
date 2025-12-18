@@ -6,9 +6,9 @@
 export const APP_CONFIG = {
   // 🏪 Informations du restaurant
   restaurant: {
-    nom: "FastOrder Restaurant",           // ← CHANGEZ ICI
-    slogan: "Tableau de bord de gestion",
-    logo: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=200&h=200&fit=crop", // ← VOTRE LOGO
+    nom: "Dabali Xpess",           // ← CHANGEZ ICI
+    slogan: "A l'ivoirienne",
+    logo: "https://dabalixpress-ci.com/assets/img/logo.jpg", // ← VOTRE LOGO
   },
 
   // 🎨 Couleurs du thème
@@ -21,7 +21,7 @@ export const APP_CONFIG = {
 
   // 🌐 URLs (à configurer après déploiement)
   urls: {
-    client: "http://localhost:5173", // ← Remplacez par votre URL de production après déploiement
+    client: "http://localhost:5174", // ← Remplacez par votre URL de production après déploiement
   },
 
   // 📱 Configuration QR Code
