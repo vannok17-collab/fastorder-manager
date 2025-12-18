@@ -4,6 +4,7 @@ import MenuManager from './components/MenuManager'
 import OrdersDisplay from './components/OrdersDisplay'
 import QRCodeGenerator from './components/QRCodeGenerator'
 import './App.css'
+import { APP_CONFIG } from './config'
 
 function App() {
   const [activeTab, setActiveTab] = useState('menu')
@@ -11,16 +12,32 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header */}
-      <header className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-xl">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold flex items-center gap-3">
-                <ChefHat size={36} />
-                FastOrder Manager
-              </h1>
-              <p className="text-orange-100 mt-1">Tableau de bord de gestion</p>
-            </div>
+      <header className="text-white shadow-xl"
+  style={{ 
+    background: `linear-gradient(to right, ${APP_CONFIG.theme.primary}, ${APP_CONFIG.theme.secondary})`
+  }}
+>
+  <div className="max-w-7xl mx-auto px-6 py-6">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        {/* Logo */}
+        {APP_CONFIG.restaurant.logo && (
+          <img 
+            src={APP_CONFIG.restaurant.logo} 
+            alt={APP_CONFIG.restaurant.nom}
+            className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-lg"
+          />
+        )}
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <ChefHat size={36} />
+            {APP_CONFIG.restaurant.nom}
+          </h1>
+          <p className="mt-1" style={{ color: `${APP_CONFIG.theme.primary}15` }}>
+            {APP_CONFIG.restaurant.slogan}
+          </p>
+        </div>
+      </div>
             <div className="bg-white/20 backdrop-blur-sm px-6 py-3 rounded-xl">
               <p className="text-sm font-semibold">🔐 Mode Administrateur</p>
             </div>

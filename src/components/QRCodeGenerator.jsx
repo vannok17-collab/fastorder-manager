@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { Download, QrCode as QrCodeIcon } from 'lucide-react'
+import { APP_CONFIG } from '../config'  // ← AJOUTEZ
 
 function QRCodeGenerator() {
   const [numeroTable, setNumeroTable] = useState(1)
-  const [baseUrl, setBaseUrl] = useState('http://localhost:5173')
+  // ✅ URL verrouillée depuis la config
+  const baseUrl = APP_CONFIG.urls.client
 
   // Générer l'URL avec paramètres - UUID fixe par table
   const generateUrl = (table) => {
@@ -65,23 +67,25 @@ function QRCodeGenerator() {
         </p>
       </div>
 
-      {/* Configuration */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">Configuration</h3>
-        
-        <div>
-          <label className="block text-gray-700 font-semibold mb-2">
-            URL de Base de l'Application Client
-          </label>
-          <input
-            type="url"
-            value={baseUrl}
-            onChange={(e) => setBaseUrl(e.target.value)}
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-orange-500 focus:outline-none"
-            placeholder="https://votreapp.vercel.app"
-          />
-        </div>
-      </div>
+      {/* Info URL Verrouillée */}
+<div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6">
+  <div className="flex items-start gap-3">
+    <div className="bg-blue-500 text-white p-2 rounded-lg">
+      <QrCodeIcon size={24} />
+    </div>
+    <div>
+      <h3 className="text-lg font-bold text-gray-800 mb-2">
+        URL de l'Application Client
+      </h3>
+      <p className="text-gray-700 font-mono text-sm bg-white px-4 py-2 rounded-lg border border-blue-200">
+        {baseUrl}
+      </p>
+      <p className="text-sm text-gray-600 mt-2">
+        🔒 URL verrouillée. Pour la modifier, éditez le fichier <code className="bg-gray-100 px-2 py-1 rounded">src/config.js</code>
+      </p>
+    </div>
+  </div>
+</div>
 
       {/* QR Code unique */}
       <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl shadow-lg p-8">
@@ -103,15 +107,43 @@ function QRCodeGenerator() {
             />
           </div>
 
-          {/* QR Code */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl">
-            <QRCodeSVG
-              id={`qr-${numeroTable}`}
-              value={generateUrl(numeroTable)}
-              size={256}
-              level="H"
-              includeMargin={true}
-            />
+        <div className="relative">
+  <QRCodeSVG
+    id={`qr-${numeroTable}`}
+    value={generateUrl(numeroTable)}
+    size={256}
+    level="H"
+    includeMargin={true}
+    fgColor={APP_CONFIG.qrCode.couleurPrincipale}
+  />
+  
+  {/* Texte au-dessus */}
+  <div className="absolute -top-8 left-0 right-0 text-center">
+    <p className="text-sm font-bold px-4 py-2 rounded-full inline-block shadow-md"
+      style={{ 
+        backgroundColor: APP_CONFIG.theme.primary,
+        color: 'white'
+      }}
+    >
+      {APP_CONFIG.qrCode.texteAppel}
+    </p>
+  </div>
+  
+  {/* Nom du restaurant en bas */}
+  <div className="absolute -bottom-8 left-0 right-0 text-center">
+    <p className="text-xs font-semibold px-4 py-1 rounded-full inline-block"
+      style={{ 
+        backgroundColor: `${APP_CONFIG.theme.primary}20`,
+        color: APP_CONFIG.theme.primary
+      }}
+    >
+      {APP_CONFIG.restaurant.nom}
+    </p>
+  </div>
+</div>
+
+{/* QR Code */}
+<div className="bg-white p-8 pt-16 pb-16 rounded-2xl shadow-xl">  {/* ← Ajoutez pt-16 pb-16 */}
           </div>
 
           <div className="text-center">
