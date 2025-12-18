@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabaseClient'
 import { Clock, Package, CheckCircle, RefreshCw, Printer } from 'lucide-react'
+import { APP_CONFIG } from '../config'
 
-function OrdersDisplay() {
+function OrdersDisplay({ onCountChange }) {
   const [commandes, setCommandes] = useState([])
   const [loading, setLoading] = useState(true)
   const [autoRefresh, setAutoRefresh] = useState(true)
-  const audioRef = useRef(null)
   const lastCommandeIdRef = useRef(null)
 
   useEffect(() => {
@@ -55,6 +55,12 @@ function OrdersDisplay() {
       }
 
       setCommandes(data || [])
+
+      // Mettre à jour le compteur pour le badge
+      if (onCountChange && data) {
+        const enAttente = data.filter(c => c.statut !== 'Terminée').length
+        onCountChange(enAttente)
+      }
     } catch (error) {
       console.error('Erreur chargement commandes:', error)
     } finally {
@@ -63,36 +69,37 @@ function OrdersDisplay() {
   }
 
   const playNotificationSound = () => {
-    // Son de notification (bip)
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-    const oscillator = audioContext.createOscillator()
-    const gainNode = audioContext.createGain()
+    try {
+      // Créer un contexte audio
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      
+      // Fonction pour jouer un bip
+      const playBeep = (frequency, duration, delay = 0) => {
+        setTimeout(() => {
+          const oscillator = audioContext.createOscillator()
+          const gainNode = audioContext.createGain()
 
-    oscillator.connect(gainNode)
-    gainNode.connect(audioContext.destination)
+          oscillator.connect(gainNode)
+          gainNode.connect(audioContext.destination)
 
-    oscillator.frequency.value = 800 // Fréquence du son
-    oscillator.type = 'sine'
+          oscillator.frequency.value = frequency
+          oscillator.type = 'sine'
 
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration)
 
-    oscillator.start(audioContext.currentTime)
-    oscillator.stop(audioContext.currentTime + 0.5)
+          oscillator.start(audioContext.currentTime)
+          oscillator.stop(audioContext.currentTime + duration)
+        }, delay)
+      }
 
-    // Répéter 3 fois
-    setTimeout(() => {
-      const osc2 = audioContext.createOscillator()
-      const gain2 = audioContext.createGain()
-      osc2.connect(gain2)
-      gain2.connect(audioContext.destination)
-      osc2.frequency.value = 1000
-      osc2.type = 'sine'
-      gain2.gain.setValueAtTime(0.3, audioContext.currentTime)
-      gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
-      osc2.start(audioContext.currentTime)
-      osc2.stop(audioContext.currentTime + 0.5)
-    }, 200)
+      // Jouer 3 bips successifs (mélodie de notification)
+      playBeep(800, 0.15, 0)      // Premier bip
+      playBeep(1000, 0.15, 200)   // Deuxième bip
+      playBeep(1200, 0.2, 400)    // Troisième bip (plus long)
+    } catch (error) {
+      console.error('Erreur son:', error)
+    }
   }
 
   const updateStatut = async (commandeId, newStatut) => {
@@ -152,7 +159,7 @@ function OrdersDisplay() {
         </style>
       </head>
       <body>
-        <h1>FastOrder</h1>
+        <h1>${APP_CONFIG.restaurant.nom}</h1>
         <h2>FACTURE</h2>
         
         <div class="info">
@@ -177,14 +184,14 @@ function OrdersDisplay() {
           <tfoot>
             <tr class="total">
               <td colspan="2">TOTAL (${totalArticles} article${totalArticles > 1 ? 's' : ''})</td>
-              <td colspan="2" style="text-align: right;">${commande.montant_total.toLocaleString()} FCFA</td>
+              <td colspan="2" style="text-align: right;">${commande.montant_total.toLocaleString()} ${APP_CONFIG.options.deviseMonnaie}</td>
             </tr>
           </tfoot>
         </table>
 
         <div class="footer">
           Merci de votre visite !<br>
-          À bientôt chez FastOrder
+          À bientôt chez ${APP_CONFIG.restaurant.nom}
         </div>
 
         <script>
@@ -202,14 +209,25 @@ function OrdersDisplay() {
   const getStatutColor = (statut) => {
     switch (statut) {
       case 'En attente':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+        return `bg-yellow-100 text-yellow-800 border-yellow-300`
       case 'En préparation':
-        return 'bg-blue-100 text-blue-800 border-blue-300'
+        return `bg-blue-100 text-blue-800 border-blue-300`
       case 'Terminée':
-        return 'bg-green-100 text-green-800 border-green-300'
+        return 'border-green-300'
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300'
     }
+  }
+
+  const getStatutStyle = (statut) => {
+    if (statut === 'Terminée') {
+      return {
+        backgroundColor: `${APP_CONFIG.theme.success}20`,
+        color: APP_CONFIG.theme.success,
+        borderColor: APP_CONFIG.theme.success
+      }
+    }
+    return {}
   }
 
   const getStatutIcon = (statut) => {
@@ -228,7 +246,9 @@ function OrdersDisplay() {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-20">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-orange-500 border-t-transparent"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-t-transparent"
+          style={{ borderColor: `${APP_CONFIG.theme.primary}40`, borderTopColor: 'transparent' }}
+        ></div>
       </div>
     )
   }
@@ -248,19 +268,31 @@ function OrdersDisplay() {
           {/* Toggle auto-refresh */}
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`px-4 py-2 rounded-xl font-semibold transition-all ${
-              autoRefresh
-                ? 'bg-green-100 text-green-700 border-2 border-green-300'
-                : 'bg-gray-100 text-gray-700 border-2 border-gray-300'
-            }`}
+            className={`px-4 py-2 rounded-xl font-semibold transition-all border-2`}
+            style={{
+              backgroundColor: autoRefresh ? `${APP_CONFIG.theme.success}20` : '#f3f4f6',
+              color: autoRefresh ? APP_CONFIG.theme.success : '#6b7280',
+              borderColor: autoRefresh ? APP_CONFIG.theme.success : '#d1d5db'
+            }}
           >
-            {autoRefresh ? '🔔 Auto-refresh ON' : '🔕 Auto-refresh OFF'}
+            {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
           </button>
 
           {/* Rafraîchir manuellement */}
           <button
             onClick={() => fetchCommandes()}
-            className="px-4 py-2 bg-orange-100 text-orange-700 rounded-xl font-semibold hover:bg-orange-200 transition flex items-center gap-2 border-2 border-orange-300"
+            className="px-4 py-2 rounded-xl font-semibold transition flex items-center gap-2 border-2"
+            style={{
+              backgroundColor: `${APP_CONFIG.theme.primary}20`,
+              color: APP_CONFIG.theme.primary,
+              borderColor: APP_CONFIG.theme.primary
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = `${APP_CONFIG.theme.primary}30`
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = `${APP_CONFIG.theme.primary}20`
+            }}
           >
             <RefreshCw size={18} />
             Rafraîchir
@@ -288,8 +320,13 @@ function OrdersDisplay() {
                 <div className={`p-4 border-l-4 ${
                   commande.statut === 'En attente' ? 'border-yellow-500 bg-yellow-50' :
                   commande.statut === 'En préparation' ? 'border-blue-500 bg-blue-50' :
-                  'border-green-500 bg-green-50'
-                }`}>
+                  'bg-green-50'
+                }`}
+                  style={commande.statut === 'Terminée' ? {
+                    borderLeftColor: APP_CONFIG.theme.success,
+                    backgroundColor: `${APP_CONFIG.theme.success}10`
+                  } : {}}
+                >
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h3 className="font-bold text-lg text-gray-800">
@@ -299,7 +336,9 @@ function OrdersDisplay() {
                         {new Date(commande.created_at).toLocaleString('fr-FR')}
                       </p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 flex items-center gap-1 ${getStatutColor(commande.statut)}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 flex items-center gap-1 ${getStatutColor(commande.statut)}`}
+                      style={getStatutStyle(commande.statut)}
+                    >
                       {getStatutIcon(commande.statut)}
                       {commande.statut}
                     </span>
@@ -311,10 +350,10 @@ function OrdersDisplay() {
                   {commande.commandes_items.map((item, idx) => (
                     <div key={idx} className="flex justify-between text-sm">
                       <span className="text-gray-700">
-                        <strong className="text-orange-600">{item.quantite}x</strong> {item.plats.nom}
+                        <strong style={{ color: APP_CONFIG.theme.primary }}>{item.quantite}x</strong> {item.plats.nom}
                       </span>
                       <span className="text-gray-600 font-semibold">
-                        {(item.prix_unitaire * item.quantite).toLocaleString()} F
+                        {(item.prix_unitaire * item.quantite).toLocaleString()} {APP_CONFIG.options.deviseMonnaie}
                       </span>
                     </div>
                   ))}
@@ -324,8 +363,10 @@ function OrdersDisplay() {
                     <span className="text-gray-700 font-semibold">
                       Total ({totalArticles} article{totalArticles > 1 ? 's' : ''})
                     </span>
-                    <span className="text-xl font-bold text-orange-600">
-                      {commande.montant_total.toLocaleString()} FCFA
+                    <span className="text-xl font-bold"
+                      style={{ color: APP_CONFIG.theme.primary }}
+                    >
+                      {commande.montant_total.toLocaleString()} {APP_CONFIG.options.deviseMonnaie}
                     </span>
                   </div>
                 </div>
@@ -347,7 +388,10 @@ function OrdersDisplay() {
                     {commande.statut === 'En préparation' && (
                       <button
                         onClick={() => updateStatut(commande.id, 'Terminée')}
-                        className="flex-1 bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600 transition flex items-center justify-center gap-2"
+                        className="flex-1 text-white py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2"
+                        style={{ backgroundColor: APP_CONFIG.theme.success }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = APP_CONFIG.theme.successHover}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = APP_CONFIG.theme.success}
                       >
                         <CheckCircle size={18} />
                         Terminer
@@ -355,8 +399,10 @@ function OrdersDisplay() {
                     )}
 
                     {commande.statut === 'Terminée' && (
-                      <div className="flex-1 text-center text-green-600 font-semibold py-2">
-                        ✓ Commande terminée
+                      <div className="flex-1 text-center font-semibold py-2"
+                        style={{ color: APP_CONFIG.theme.success }}
+                      >
+                        Commande terminée
                       </div>
                     )}
                   </div>
