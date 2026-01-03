@@ -1,3 +1,8 @@
+// ============================================
+// CONFIGURATION FASTORDER - MANAGER
+// fastorder-manager/src/config.js
+// ============================================
+
 import { extractColorsFromLogo } from './utils/colorExtractor'
 
 export const APP_CONFIG = {
@@ -7,7 +12,7 @@ export const APP_CONFIG = {
     logo: "https://dabalixpress-ci.com/assets/img/logo.jpg",
   },
 
-  // Couleurs par défaut (seront remplacées automatiquement)
+  // Couleurs par défaut (remplacées automatiquement par l'extraction)
   theme: {
     primary: "#f97316",
     primaryHover: "#ea580c",
@@ -43,7 +48,7 @@ export const APP_CONFIG = {
 
   qrCode: {
     texteAppel: "Scannez ici pour commander",
-    couleurPrincipale: "#f97316", // Sera remplacée
+    couleurPrincipale: "#f97316",
   },
 
   options: {
@@ -55,16 +60,17 @@ export const APP_CONFIG = {
 // Fonction pour initialiser les couleurs depuis le logo
 export const initializeThemeFromLogo = async () => {
   try {
+    console.log('🎨 Extraction des couleurs du logo...')
     const extractedColors = await extractColorsFromLogo(APP_CONFIG.restaurant.logo)
     
     // Mettre à jour les couleurs
     APP_CONFIG.theme = extractedColors
     APP_CONFIG.qrCode.couleurPrincipale = extractedColors.primary
     
-    console.log('🎨 Couleurs extraites du logo:', extractedColors)
+    console.log('✅ Couleurs extraites:', extractedColors)
     return extractedColors
   } catch (error) {
-    console.error('Erreur extraction couleurs:', error)
+    console.error('❌ Erreur extraction couleurs:', error)
     return APP_CONFIG.theme
   }
 }
