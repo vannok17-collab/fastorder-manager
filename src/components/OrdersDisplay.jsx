@@ -1,5 +1,5 @@
 // fastorder-manager/src/components/OrdersDisplay.jsx
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
 import { Clock, Package, CheckCircle, RefreshCw, Printer } from 'lucide-react'
 import { APP_CONFIG } from '../config'
@@ -10,22 +10,39 @@ function OrdersDisplay({ onCountChange }) {
   const [autoRefresh, setAutoRefresh] = useState(true)
   const lastCommandeIdRef = useRef(null)
 
-  useEffect(() => {
-    fetchCommandes()
+  const playNotificationSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      
+      const playBeep = (frequency, duration, delay = 0) => {
+        setTimeout(() => {
+          const oscillator = audioContext.createOscillator()
+          const gainNode = audioContext.createGain()
 
-    let interval
-    if (autoRefresh) {
-      interval = setInterval(() => {
-        fetchCommandes(true)
-      }, 15000)
+          oscillator.connect(gainNode)
+          gainNode.connect(audioContext.destination)
+
+          oscillator.frequency.value = frequency
+          oscillator.type = 'sine'
+
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration)
+
+          oscillator.start(audioContext.currentTime)
+          oscillator.stop(audioContext.currentTime + duration)
+        }, delay)
+      }
+
+      playBeep(800, 0.15, 0)
+      playBeep(1000, 0.15, 200)
+      playBeep(1200, 0.2, 400)
+    } catch (error) {
+      console.error('Erreur son:', error)
     }
+  }
 
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [autoRefresh])
-
-  const fetchCommandes = async (silent = false) => {
+  // Utilisation de useCallback pour mémoriser la fonction fetchCommandes
+  const fetchCommandes = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true)
 
@@ -63,38 +80,22 @@ function OrdersDisplay({ onCountChange }) {
     } finally {
       if (!silent) setLoading(false)
     }
-  }
+  }, [onCountChange]) // Ajout des dépendances nécessaires
 
-  const playNotificationSound = () => {
-    try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
-      
-      const playBeep = (frequency, duration, delay = 0) => {
-        setTimeout(() => {
-          const oscillator = audioContext.createOscillator()
-          const gainNode = audioContext.createGain()
+  useEffect(() => {
+    fetchCommandes()
 
-          oscillator.connect(gainNode)
-          gainNode.connect(audioContext.destination)
-
-          oscillator.frequency.value = frequency
-          oscillator.type = 'sine'
-
-          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration)
-
-          oscillator.start(audioContext.currentTime)
-          oscillator.stop(audioContext.currentTime + duration)
-        }, delay)
-      }
-
-      playBeep(800, 0.15, 0)
-      playBeep(1000, 0.15, 200)
-      playBeep(1200, 0.2, 400)
-    } catch (error) {
-      console.error('Erreur son:', error)
+    let interval
+    if (autoRefresh) {
+      interval = setInterval(() => {
+        fetchCommandes(true)
+      }, 15000)
     }
-  }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [autoRefresh, fetchCommandes]) // Ajout de fetchCommandes dans les dépendances
 
   const updateStatut = async (commandeId, newStatut) => {
     try {
