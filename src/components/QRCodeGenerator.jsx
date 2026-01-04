@@ -1,248 +1,402 @@
-import { useState, useMemo } from 'react'
-import { QRCodeSVG } from 'qrcode.react'
-import { Download, QrCode as QrCodeIcon } from 'lucide-react'
+// fastorder-manager/src/components/QRCodeGenerator.jsx
+import { useState, useRef, useEffect } from 'react'
+import { Download, Printer, QrCode as QrCodeIcon } from 'lucide-react'
 import { APP_CONFIG } from '../config'
 
 function QRCodeGenerator() {
-  const [numeroTable, setNumeroTable] = useState(1)
-  const baseUrl = APP_CONFIG.urls.client
+  const [nombreTables, setNombreTables] = useState(10)
+  const [baseUrl, setBaseUrl] = useState('')
+  const canvasRefs = useRef([])
 
-  const generateUrl = (table) => {
-    const fixedUserId = `table_${table}_${btoa(String(table)).substring(0, 8)}`
-    return `${baseUrl}/?table=${table}&uuid=${fixedUserId}`
-  }
-
-  const downloadQRCode = (table) => {
-    const svg = document.getElementById(`qr-${table}`)
-    if (!svg) {
-      alert('Erreur: QR Code introuvable')
-      return
-    }
-
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    const svgData = new XMLSerializer().serializeToString(svg)
-    const img = new Image()
-    
-    img.onload = function() {
-      canvas.width = img.width
-      canvas.height = img.height
-      ctx.drawImage(img, 0, 0)
-      
-      const pngUrl = canvas.toDataURL('image/png')
-      const downloadLink = document.createElement('a')
-      downloadLink.href = pngUrl
-      downloadLink.download = `${APP_CONFIG.restaurant.nom.replace(/\s+/g, '-')}-Table-${table}.png`
-      document.body.appendChild(downloadLink)
-      downloadLink.click()
-      document.body.removeChild(downloadLink)
-    }
-    
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
-  }
-
-  const tables = useMemo(() => {
-    const tableList = []
-    for (let i = 1; i <= APP_CONFIG.options.nombreTables; i++) {
-      tableList.push(i)
-    }
-    return tableList
+  useEffect(() => {
+    const url = window.location.origin.replace('5174', '5173')
+    setBaseUrl(url)
   }, [])
 
+  useEffect(() => {
+    if (baseUrl && canvasRefs.current.length > 0) {
+      generateAllQRCodes()
+    }
+  }, [baseUrl, nombreTables])
+
+  const generateAllQRCodes = () => {
+    for (let i = 0; i < nombreTables; i++) {
+      generateQRCode(i + 1, canvasRefs.current[i])
+    }
+  }
+
+  const generateQRCode = (tableNumber, canvas) => {
+    if (!canvas) return
+
+    const uuid = 'table_' + tableNumber + '_' + Date.now().toString(36)
+    const url = `${baseUrl}?table=${tableNumber}&uuid=${uuid}`
+    
+    // Utiliser les couleurs du thème extrait du logo
+    const qrColor = APP_CONFIG.theme.primary
+    const bgColor = APP_CONFIG.theme.primaryBg || '#ffffff'
+    
+    // Importer et utiliser qrcode dynamiquement
+    import('qrcode').then(QRCode => {
+      QRCode.toCanvas(canvas, url, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: qrColor,    // Couleur principale du logo (rouge/orange)
+          light: bgColor     // Fond clair
+        },
+        errorCorrectionLevel: 'H'
+      }, (error) => {
+        if (error) {
+          console.error('Erreur génération QR Code:', error)
+        } else {
+          // Ajouter le logo au centre du QR Code
+          addLogoToQRCode(canvas, tableNumber)
+        }
+      })
+    })
+  }
+
+  const addLogoToQRCode = (canvas, tableNumber) => {
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    
+    img.onload = () => {
+      // Taille du logo (20% de la taille du QR Code)
+      const logoSize = canvas.width * 0.2
+      const x = (canvas.width - logoSize) / 2
+      const y = (canvas.height - logoSize) / 2
+      
+      // Fond blanc arrondi derrière le logo
+      ctx.fillStyle = '#ffffff'
+      ctx.beginPath()
+      ctx.arc(canvas.width / 2, canvas.height / 2, logoSize / 1.8, 0, 2 * Math.PI)
+      ctx.fill()
+      
+      // Bordure avec la couleur principale
+      ctx.strokeStyle = APP_CONFIG.theme.primary
+      ctx.lineWidth = 4
+      ctx.stroke()
+      
+      // Dessiner le logo
+      ctx.save()
+      ctx.beginPath()
+      ctx.arc(canvas.width / 2, canvas.height / 2, logoSize / 2.2, 0, 2 * Math.PI)
+      ctx.clip()
+      ctx.drawImage(img, x + 8, y + 8, logoSize - 16, logoSize - 16)
+      ctx.restore()
+      
+      // Ajouter le numéro de table sous le logo
+      ctx.fillStyle = APP_CONFIG.theme.primary
+      ctx.font = 'bold 16px Arial'
+      ctx.textAlign = 'center'
+      ctx.fillText(`Table ${tableNumber}`, canvas.width / 2, canvas.height - 20)
+    }
+    
+    img.onerror = () => {
+      console.error('Impossible de charger le logo')
+    }
+    
+    img.src = APP_CONFIG.restaurant.logo
+  }
+
+  const downloadQRCode = (tableNumber) => {
+    const canvas = canvasRefs.current[tableNumber - 1]
+    if (!canvas) return
+
+    const link = document.createElement('a')
+    link.download = `QR-Code-Table-${tableNumber}-${APP_CONFIG.restaurant.nom}.png`
+    link.href = canvas.toDataURL()
+    link.click()
+  }
+
+  const downloadAllQRCodes = () => {
+    for (let i = 1; i <= nombreTables; i++) {
+      setTimeout(() => downloadQRCode(i), i * 100)
+    }
+  }
+
+  const printQRCode = (tableNumber) => {
+    const canvas = canvasRefs.current[tableNumber - 1]
+    if (!canvas) return
+
+    const printWindow = window.open('', '', 'width=800,height=600')
+    const imgData = canvas.toDataURL()
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>QR Code - Table ${tableNumber}</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 40px;
+            font-family: Arial, sans-serif;
+            text-align: center;
+          }
+          .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 30px;
+            border: 3px solid ${APP_CONFIG.theme.primary};
+            border-radius: 20px;
+            background: linear-gradient(135deg, ${APP_CONFIG.theme.primaryBg} 0%, #ffffff 100%);
+          }
+          .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            border: 3px solid ${APP_CONFIG.theme.primary};
+          }
+          h1 {
+            color: ${APP_CONFIG.theme.primary};
+            font-size: 32px;
+            margin: 10px 0;
+          }
+          h2 {
+            color: ${APP_CONFIG.theme.secondary || APP_CONFIG.theme.primary};
+            font-size: 48px;
+            margin: 10px 0;
+          }
+          .qr-code {
+            margin: 20px 0;
+          }
+          p {
+            color: #666;
+            font-size: 16px;
+            margin: 10px 0;
+          }
+          .footer {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid ${APP_CONFIG.theme.primary};
+            color: ${APP_CONFIG.theme.primary};
+            font-weight: bold;
+          }
+          @media print {
+            body { margin: 0; padding: 20px; }
+            .container { page-break-after: always; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <img src="${APP_CONFIG.restaurant.logo}" alt="Logo" class="logo" />
+          <h1>${APP_CONFIG.restaurant.nom}</h1>
+          <h2>Table ${tableNumber}</h2>
+          <div class="qr-code">
+            <img src="${imgData}" alt="QR Code" style="width: 300px; height: 300px;" />
+          </div>
+          <p>📱 Scannez ce code pour commander</p>
+          <div class="footer">
+            ${APP_CONFIG.restaurant.slogan || 'Commandez facilement'}
+          </div>
+        </div>
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          }
+        </script>
+      </body>
+      </html>
+    `)
+    printWindow.document.close()
+  }
+
+  const printAllQRCodes = () => {
+    const printWindow = window.open('', '', 'width=800,height=600')
+    
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>QR Codes - ${APP_CONFIG.restaurant.nom}</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+          }
+          .qr-container {
+            display: inline-block;
+            width: 45%;
+            margin: 10px;
+            padding: 20px;
+            border: 3px solid ${APP_CONFIG.theme.primary};
+            border-radius: 15px;
+            text-align: center;
+            background: linear-gradient(135deg, ${APP_CONFIG.theme.primaryBg} 0%, #ffffff 100%);
+            page-break-inside: avoid;
+          }
+          .logo {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 10px;
+            border-radius: 50%;
+            border: 2px solid ${APP_CONFIG.theme.primary};
+          }
+          h3 {
+            color: ${APP_CONFIG.theme.primary};
+            font-size: 24px;
+            margin: 10px 0;
+          }
+          h4 {
+            color: ${APP_CONFIG.theme.secondary || APP_CONFIG.theme.primary};
+            font-size: 36px;
+            margin: 5px 0;
+          }
+          img.qr {
+            width: 250px;
+            height: 250px;
+            margin: 10px 0;
+          }
+          p {
+            color: #666;
+            font-size: 14px;
+          }
+          @media print {
+            .qr-container { width: 48%; }
+          }
+        </style>
+      </head>
+      <body>
+    `
+
+    for (let i = 1; i <= nombreTables; i++) {
+      const canvas = canvasRefs.current[i - 1]
+      if (canvas) {
+        const imgData = canvas.toDataURL()
+        htmlContent += `
+          <div class="qr-container">
+            <img src="${APP_CONFIG.restaurant.logo}" alt="Logo" class="logo" />
+            <h3>${APP_CONFIG.restaurant.nom}</h3>
+            <h4>Table ${i}</h4>
+            <img src="${imgData}" alt="QR Code Table ${i}" class="qr" />
+            <p>📱 Scannez pour commander</p>
+          </div>
+        `
+      }
+    }
+
+    htmlContent += `
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          }
+        </script>
+      </body>
+      </html>
+    `
+
+    printWindow.document.write(htmlContent)
+    printWindow.document.close()
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-          <QrCodeIcon size={36} style={{ color: APP_CONFIG.theme.primary }} />
-          Générateur de QR Codes
-        </h2>
-        <p className="text-gray-600 mt-2">
-          Générez des QR Codes pour chaque table de votre restaurant
-        </p>
-      </div>
-
-      {/* Info URL Verrouillée */}
-      <div className="rounded-2xl p-6 border-2"
-        style={{
-          backgroundColor: `${APP_CONFIG.theme.info}10`,
-          borderColor: `${APP_CONFIG.theme.info}40`
-        }}
-      >
-        <div className="flex items-start gap-3">
-          <div className="text-white p-2 rounded-lg"
-            style={{ backgroundColor: APP_CONFIG.theme.info }}
-          >
-            <QrCodeIcon size={24} />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">
-              URL de l'Application Client
-            </h3>
-            <p className="text-gray-700 font-mono text-sm bg-white px-4 py-2 rounded-lg border"
-              style={{ borderColor: `${APP_CONFIG.theme.info}40` }}
-            >
-              {baseUrl}
-            </p>
-            <p className="text-sm text-gray-600 mt-2">
-              URL verrouillée. Pour la modifier, éditez le fichier <code className="bg-gray-100 px-2 py-1 rounded">src/config.js</code>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* QR Code unique */}
-      <div className="rounded-2xl shadow-lg p-8"
-        style={{
-          background: `linear-gradient(to bottom right, ${APP_CONFIG.theme.primaryBg}, ${APP_CONFIG.theme.primary}20)`
-        }}
-      >
-        <h3 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-          Générer un QR Code pour une Table Spécifique
-        </h3>
-
-        <div className="flex flex-col items-center space-y-6">
-          <div className="w-full max-w-xs">
-            <label className="block text-gray-700 font-semibold mb-2 text-center">
-              Numéro de Table
-            </label>
-            <input
-              type="number"
-              min="1"
-              max={APP_CONFIG.options.nombreTables}
-              value={numeroTable}
-              onChange={(e) => setNumeroTable(parseInt(e.target.value) || 1)}
-              className="w-full px-6 py-4 border-2 rounded-xl focus:outline-none text-center text-2xl font-bold"
-              style={{ 
-                borderColor: APP_CONFIG.theme.primary,
-                color: APP_CONFIG.theme.primary
-              }}
-            />
-          </div>
-
-          {/* QR Code avec textes */}
-          <div className="bg-white p-8 rounded-2xl shadow-xl">
-            <div className="relative" style={{ paddingTop: '50px', paddingBottom: '50px' }}>
-              {/* Texte au-dessus */}
-              <div className="absolute top-0 left-0 right-0 text-center">
-                <p className="text-base font-bold px-6 py-3 rounded-xl inline-block shadow-lg"
-                  style={{ 
-                    backgroundColor: APP_CONFIG.theme.primary,
-                    color: 'white'
-                  }}
-                >
-                  {APP_CONFIG.qrCode.texteAppel}
-                </p>
-              </div>
-              
-              {/* QR Code */}
-              <div className="flex justify-center">
-                <QRCodeSVG
-                  id={`qr-${numeroTable}`}
-                  value={generateUrl(numeroTable)}
-                  size={256}
-                  level="H"
-                  includeMargin={true}
-                  fgColor={APP_CONFIG.qrCode.couleurPrincipale}
-                />
-              </div>
-              
-              {/* Nom du restaurant en bas */}
-              <div className="absolute bottom-0 left-0 right-0 text-center">
-                <p className="text-sm font-bold px-6 py-2 rounded-xl inline-block shadow-md border-2"
-                  style={{ 
-                    backgroundColor: 'white',
-                    color: APP_CONFIG.theme.primary,
-                    borderColor: APP_CONFIG.theme.primary
-                  }}
-                >
-                  {APP_CONFIG.restaurant.nom}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <p className="text-gray-700 font-semibold mb-2">Table {numeroTable}</p>
-            <p className="text-sm text-gray-600 bg-white px-4 py-2 rounded-lg font-mono max-w-md break-all">
-              {generateUrl(numeroTable)}
-            </p>
-          </div>
-
-          <button
-            onClick={() => downloadQRCode(numeroTable)}
-            className="text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-3"
-            style={{ background: `linear-gradient(to right, ${APP_CONFIG.theme.success}, ${APP_CONFIG.theme.successHover})` }}
-          >
-            <Download size={24} />
-            Télécharger le QR Code
-          </button>
-        </div>
-      </div>
-
-      {/* Grille de tous les QR Codes */}
       <div className="bg-white rounded-2xl shadow-lg p-6">
-        <h3 className="text-2xl font-bold text-gray-800 mb-6">
-          Tous les QR Codes (Tables 1 à {APP_CONFIG.options.nombreTables})
-        </h3>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <QrCodeIcon size={32} style={{ color: APP_CONFIG.theme.primary }} />
+              Générateur de QR Codes
+            </h2>
+            <p className="text-gray-600 mt-2">
+              QR Codes personnalisés avec les couleurs de {APP_CONFIG.restaurant.nom}
+            </p>
+          </div>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={downloadAllQRCodes}
+              className="px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+              style={{
+                backgroundColor: APP_CONFIG.theme.success,
+                color: '#ffffff'
+              }}
+            >
+              <Download size={20} />
+              Tout télécharger
+            </button>
+            
+            <button
+              onClick={printAllQRCodes}
+              className="px-6 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+              style={{
+                backgroundColor: APP_CONFIG.theme.primary,
+                color: '#ffffff'
+              }}
+            >
+              <Printer size={20} />
+              Tout imprimer
+            </button>
+          </div>
+        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {tables.map(table => (
-            <div key={table} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition">
-              <div className="bg-white p-3 rounded-lg mb-3">
-                <div className="relative" style={{ paddingTop: '20px', paddingBottom: '20px' }}>
-                  {/* Texte "Scanner ici" */}
-                  <div className="absolute top-0 left-0 right-0 text-center">
-                    <span className="text-xs font-bold px-2 py-1 rounded-lg inline-block"
-                      style={{ 
-                        backgroundColor: APP_CONFIG.theme.primary,
-                        color: 'white',
-                        fontSize: '9px'
-                      }}
-                    >
-                      Scanner ici
-                    </span>
-                  </div>
-                  
-                  {/* QR Code */}
-                  <div className="flex justify-center my-2">
-                    <QRCodeSVG
-                      id={`qr-${table}`}
-                      value={generateUrl(table)}
-                      size={128}
-                      level="H"
-                      includeMargin={true}
-                      fgColor={APP_CONFIG.qrCode.couleurPrincipale}
-                    />
-                  </div>
-                  
-                  {/* Badge table */}
-                  <div className="absolute bottom-0 left-0 right-0 text-center">
-                    <span className="text-xs font-bold px-3 py-1 rounded-full shadow-md inline-block"
-                      style={{ 
-                        backgroundColor: APP_CONFIG.theme.primary,
-                        color: 'white'
-                      }}
-                    >
-                      Table {table}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
+        {/* Configuration */}
+        <div className="flex items-center gap-4">
+          <label className="text-gray-700 font-semibold">Nombre de tables :</label>
+          <input
+            type="number"
+            value={nombreTables}
+            onChange={(e) => setNombreTables(Math.max(1, parseInt(e.target.value) || 1))}
+            min="1"
+            max="100"
+            className="px-4 py-2 border-2 rounded-xl font-semibold focus:outline-none focus:ring-2"
+            style={{
+              borderColor: APP_CONFIG.theme.primary,
+              focusRing: APP_CONFIG.theme.primary
+            }}
+          />
+          <span className="text-gray-600">table(s)</span>
+        </div>
+      </div>
+
+      {/* Grille de QR Codes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {Array.from({ length: nombreTables }, (_, i) => i + 1).map((tableNumber) => (
+          <div key={tableNumber} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all">
+            <div className="text-center mb-4">
+              <h3 className="text-2xl font-bold" style={{ color: APP_CONFIG.theme.primary }}>
+                Table {tableNumber}
+              </h3>
+            </div>
+            
+            <div className="bg-gray-50 rounded-xl p-4 mb-4 flex justify-center items-center"
+              style={{ backgroundColor: APP_CONFIG.theme.primaryBg }}
+            >
+              <canvas
+                ref={(el) => (canvasRefs.current[tableNumber - 1] = el)}
+                className="rounded-lg shadow-md"
+              />
+            </div>
+
+            <div className="flex gap-2">
               <button
-                onClick={() => downloadQRCode(table)}
-                className="w-full text-white py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2"
-                style={{ backgroundColor: APP_CONFIG.theme.primary }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = APP_CONFIG.theme.primaryHover}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = APP_CONFIG.theme.primary}
+                onClick={() => downloadQRCode(tableNumber)}
+                className="flex-1 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-white"
+                style={{ backgroundColor: APP_CONFIG.theme.success }}
               >
-                <Download size={16} />
+                <Download size={18} />
                 Télécharger
               </button>
+              
+              <button
+                onClick={() => printQRCode(tableNumber)}
+                className="flex-1 py-2 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 text-white"
+                style={{ backgroundColor: APP_CONFIG.theme.primary }}
+              >
+                <Printer size={18} />
+                Imprimer
+              </button>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   )

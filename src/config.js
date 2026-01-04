@@ -22,38 +22,23 @@ export const APP_CONFIG = {
     accent: "#fbbf24",
     success: "#10b981",
     successHover: "#059669",
-    successLight: "#d1fae5",
+    warning: "#f59e0b",
+    info: "#3b82f6",
     danger: "#ef4444",
     dangerHover: "#dc2626",
-    dangerLight: "#fee2e2",
-    warning: "#f59e0b",
-    warningLight: "#fef3c7",
-    info: "#3b82f6",
-    infoLight: "#dbeafe",
     text: {
       primary: "#111827",
       secondary: "#6b7280",
-      light: "#9ca3af",
+      light: "#ffffff"
     },
     background: {
       primary: "#ffffff",
       secondary: "#f9fafb",
-      dark: "#1f2937",
     }
-  },
-
-  urls: {
-    client: "http://localhost:5173",
-  },
-
-  qrCode: {
-    texteAppel: "Scannez ici pour commander",
-    couleurPrincipale: "#f97316",
   },
 
   options: {
     deviseMonnaie: "FCFA",
-    nombreTables: 20,
   }
 }
 
@@ -65,7 +50,6 @@ export const initializeThemeFromLogo = async () => {
     
     // Mettre à jour les couleurs
     APP_CONFIG.theme = extractedColors
-    APP_CONFIG.qrCode.couleurPrincipale = extractedColors.primary
     
     console.log('✅ Couleurs extraites:', extractedColors)
     return extractedColors
