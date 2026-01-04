@@ -1,5 +1,5 @@
 // fastorder-manager/src/components/QRCodeGenerator.jsx
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Download, Printer, QrCode as QrCodeIcon } from 'lucide-react'
 import { APP_CONFIG } from '../config'
 
@@ -13,72 +13,25 @@ function QRCodeGenerator() {
     setBaseUrl(url)
   }, [])
 
-  useEffect(() => {
-    if (baseUrl && canvasRefs.current.length > 0) {
-      generateAllQRCodes()
-    }
-  }, [baseUrl, nombreTables])
-
-  const generateAllQRCodes = () => {
-    for (let i = 0; i < nombreTables; i++) {
-      generateQRCode(i + 1, canvasRefs.current[i])
-    }
-  }
-
-  const generateQRCode = (tableNumber, canvas) => {
-    if (!canvas) return
-
-    const uuid = 'table_' + tableNumber + '_' + Date.now().toString(36)
-    const url = `${baseUrl}?table=${tableNumber}&uuid=${uuid}`
-    
-    // Utiliser les couleurs du thème extrait du logo
-    const qrColor = APP_CONFIG.theme.primary
-    const bgColor = APP_CONFIG.theme.primaryBg || '#ffffff'
-    
-    // Importer et utiliser qrcode dynamiquement
-    import('qrcode').then(QRCode => {
-      QRCode.toCanvas(canvas, url, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: qrColor,    // Couleur principale du logo (rouge/orange)
-          light: bgColor     // Fond clair
-        },
-        errorCorrectionLevel: 'H'
-      }, (error) => {
-        if (error) {
-          console.error('Erreur génération QR Code:', error)
-        } else {
-          // Ajouter le logo au centre du QR Code
-          addLogoToQRCode(canvas, tableNumber)
-        }
-      })
-    })
-  }
-
-  const addLogoToQRCode = (canvas, tableNumber) => {
+  const addLogoToQRCode = useCallback((canvas, tableNumber) => {
     const ctx = canvas.getContext('2d')
     const img = new Image()
     img.crossOrigin = 'anonymous'
     
     img.onload = () => {
-      // Taille du logo (20% de la taille du QR Code)
       const logoSize = canvas.width * 0.2
       const x = (canvas.width - logoSize) / 2
       const y = (canvas.height - logoSize) / 2
       
-      // Fond blanc arrondi derrière le logo
       ctx.fillStyle = '#ffffff'
       ctx.beginPath()
       ctx.arc(canvas.width / 2, canvas.height / 2, logoSize / 1.8, 0, 2 * Math.PI)
       ctx.fill()
       
-      // Bordure avec la couleur principale
       ctx.strokeStyle = APP_CONFIG.theme.primary
       ctx.lineWidth = 4
       ctx.stroke()
       
-      // Dessiner le logo
       ctx.save()
       ctx.beginPath()
       ctx.arc(canvas.width / 2, canvas.height / 2, logoSize / 2.2, 0, 2 * Math.PI)
@@ -86,7 +39,6 @@ function QRCodeGenerator() {
       ctx.drawImage(img, x + 8, y + 8, logoSize - 16, logoSize - 16)
       ctx.restore()
       
-      // Ajouter le numéro de table sous le logo
       ctx.fillStyle = APP_CONFIG.theme.primary
       ctx.font = 'bold 16px Arial'
       ctx.textAlign = 'center'
@@ -98,7 +50,47 @@ function QRCodeGenerator() {
     }
     
     img.src = APP_CONFIG.restaurant.logo
-  }
+  }, [])
+
+  const generateQRCode = useCallback((tableNumber, canvas) => {
+    if (!canvas || !baseUrl) return
+
+    const uuid = 'table_' + tableNumber + '_' + Date.now().toString(36)
+    const url = `${baseUrl}?table=${tableNumber}&uuid=${uuid}`
+    
+    const qrColor = APP_CONFIG.theme.primary
+    const bgColor = APP_CONFIG.theme.primaryBg || '#ffffff'
+    
+    import('qrcode').then(QRCode => {
+      QRCode.toCanvas(canvas, url, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: qrColor,
+          light: bgColor
+        },
+        errorCorrectionLevel: 'H'
+      }, (error) => {
+        if (error) {
+          console.error('Erreur génération QR Code:', error)
+        } else {
+          addLogoToQRCode(canvas, tableNumber)
+        }
+      })
+    })
+  }, [baseUrl, addLogoToQRCode])
+
+  const generateAllQRCodes = useCallback(() => {
+    for (let i = 0; i < nombreTables; i++) {
+      generateQRCode(i + 1, canvasRefs.current[i])
+    }
+  }, [nombreTables, generateQRCode])
+
+  useEffect(() => {
+    if (baseUrl && canvasRefs.current.length > 0) {
+      generateAllQRCodes()
+    }
+  }, [baseUrl, nombreTables, generateAllQRCodes])
 
   const downloadQRCode = (tableNumber) => {
     const canvas = canvasRefs.current[tableNumber - 1]
@@ -349,8 +341,7 @@ function QRCodeGenerator() {
             max="100"
             className="px-4 py-2 border-2 rounded-xl font-semibold focus:outline-none focus:ring-2"
             style={{
-              borderColor: APP_CONFIG.theme.primary,
-              focusRing: APP_CONFIG.theme.primary
+              borderColor: APP_CONFIG.theme.primary
             }}
           />
           <span className="text-gray-600">table(s)</span>
