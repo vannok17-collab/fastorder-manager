@@ -1,14 +1,37 @@
-import { useState } from 'react'
+// fastorder-manager/src/App.jsx
+import { useState, useEffect } from 'react'
 import { ChefHat, ShoppingBag, QrCode } from 'lucide-react'
 import MenuManager from './components/MenuManager'
 import OrdersDisplay from './components/OrdersDisplay'
 import QRCodeGenerator from './components/QRCodeGenerator'
 import './App.css'
-import { APP_CONFIG } from './config'
+import { APP_CONFIG, initializeThemeFromLogo } from './config'
 
 function App() {
   const [activeTab, setActiveTab] = useState('menu')
   const [commandesEnAttente, setCommandesEnAttente] = useState(0)
+  const [themeReady, setThemeReady] = useState(false)
+
+  // Initialiser le thème depuis le logo
+  useEffect(() => {
+    const loadTheme = async () => {
+      await initializeThemeFromLogo()
+      setThemeReady(true)
+    }
+    loadTheme()
+  }, [])
+
+  // Écran de chargement du thème
+  if (!themeReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-300 border-t-orange-500 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-semibold">Chargement du thème...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -21,7 +44,6 @@ function App() {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {/* Logo */}
               {APP_CONFIG.restaurant.logo && (
                 <img 
                   src={APP_CONFIG.restaurant.logo} 
@@ -46,16 +68,14 @@ function App() {
         </div>
       </header>
 
-      {/* Navigation par onglets */}
+      {/* Navigation */}
       <nav className="bg-white shadow-md sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex space-x-1">
             <button
               onClick={() => setActiveTab('menu')}
               className={`relative flex items-center gap-2 px-6 py-4 font-semibold transition-all ${
-                activeTab === 'menu'
-                  ? 'border-b-4'
-                  : 'hover:bg-gray-50'
+                activeTab === 'menu' ? 'border-b-4' : 'hover:bg-gray-50'
               }`}
               style={{
                 color: activeTab === 'menu' ? APP_CONFIG.theme.primary : '#6b7280',
@@ -70,9 +90,7 @@ function App() {
             <button
               onClick={() => setActiveTab('orders')}
               className={`relative flex items-center gap-2 px-6 py-4 font-semibold transition-all ${
-                activeTab === 'orders'
-                  ? 'border-b-4'
-                  : 'hover:bg-gray-50'
+                activeTab === 'orders' ? 'border-b-4' : 'hover:bg-gray-50'
               }`}
               style={{
                 color: activeTab === 'orders' ? APP_CONFIG.theme.primary : '#6b7280',
@@ -82,7 +100,6 @@ function App() {
             >
               <ShoppingBag size={20} />
               <span>Commandes</span>
-              {/* Badge avec nombre de commandes en attente */}
               {commandesEnAttente > 0 && (
                 <span className="absolute -top-1 -right-1 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-lg animate-pulse"
                   style={{ backgroundColor: APP_CONFIG.theme.danger }}
@@ -95,9 +112,7 @@ function App() {
             <button
               onClick={() => setActiveTab('qrcode')}
               className={`relative flex items-center gap-2 px-6 py-4 font-semibold transition-all ${
-                activeTab === 'qrcode'
-                  ? 'border-b-4'
-                  : 'hover:bg-gray-50'
+                activeTab === 'qrcode' ? 'border-b-4' : 'hover:bg-gray-50'
               }`}
               style={{
                 color: activeTab === 'qrcode' ? APP_CONFIG.theme.primary : '#6b7280',
