@@ -298,9 +298,6 @@ function QRCodeGenerator() {
               <QrCodeIcon size={32} style={{ color: APP_CONFIG.theme.primary }} />
               Générateur de QR Codes
             </h2>
-            <p className="text-gray-600 mt-2">
-              QR Codes personnalisés avec les couleurs de {APP_CONFIG.restaurant.nom}
-            </p>
           </div>
           
           <div className="flex gap-3">

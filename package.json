@@ -13,6 +13,7 @@
     "@supabase/supabase-js": "^2.86.0",
     "colorthief": "^2.6.0",
     "lucide-react": "^0.555.0",
+    "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
