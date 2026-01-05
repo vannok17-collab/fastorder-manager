@@ -78,3 +78,41 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: #ea580c;
 }
+/* Ajoutez ceci dans fastorder-manager/src/App.css */
+
+/* Animation de la flèche qui pointe vers le QR Code */
+@keyframes bounce-horizontal {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-10px);
+  }
+}
+
+.animate-bounce-horizontal {
+  animation: bounce-horizontal 1.5s ease-in-out infinite;
+}
+
+/* Animation pulse pour le texte */
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-scale {
+  animation: pulse-scale 2s ease-in-out infinite;
+}
+
+/* Style pour le QR Code avec effet hover */
+.qr-code-container {
+  transition: all 0.3s ease;
+}
+
+.qr-code-container:hover {
+  transform: scale(1.05);
+}
