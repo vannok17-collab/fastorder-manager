@@ -9,7 +9,7 @@ function QRCodeGenerator() {
   const canvasRefs = useRef([])
 
   useEffect(() => {
-    const url = window.location.origin.replace('5174', '5173')
+    const url = "https://fastorder-client.netlify.app/"
     setBaseUrl(url)
   }, [])
 
