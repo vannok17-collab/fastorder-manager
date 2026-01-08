@@ -1,14 +1,16 @@
 // fastorder-manager/src/components/OrdersDisplay.jsx
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../supabaseClient'
-import { Clock, Package, CheckCircle, RefreshCw, Printer } from 'lucide-react'
+import { Clock, Package, CheckCircle, RefreshCw, Printer, CreditCard } from 'lucide-react'
 import { APP_CONFIG } from '../config'
+import PaymentModal from './PaymentModal'
 
 function OrdersDisplay({ onCountChange }) {
   const [commandes, setCommandes] = useState([])
   const [loading, setLoading] = useState(true)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const lastCommandeIdRef = useRef(null)
+  const [selectedCommande, setSelectedCommande] = useState(null)
 
   const playNotificationSound = () => {
     try {
@@ -80,7 +82,7 @@ function OrdersDisplay({ onCountChange }) {
     } finally {
       if (!silent) setLoading(false)
     }
-  }, [onCountChange]) // Ajout des dépendances nécessaires
+  }, [onCountChange])
 
   useEffect(() => {
     fetchCommandes()
@@ -92,10 +94,24 @@ function OrdersDisplay({ onCountChange }) {
       }, 15000)
     }
 
+    // ✨ Realtime subscription
+    const channel = supabase
+      .channel('commandes_realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'commandes'
+      }, (payload) => {
+        console.log('🔄 Changement détecté:', payload)
+        fetchCommandes(true)
+      })
+      .subscribe()
+
     return () => {
       if (interval) clearInterval(interval)
+      supabase.removeChannel(channel)
     }
-  }, [autoRefresh, fetchCommandes]) // Ajout de fetchCommandes dans les dépendances
+  }, [autoRefresh, fetchCommandes])
 
   const updateStatut = async (commandeId, newStatut) => {
     try {
@@ -195,7 +211,7 @@ function OrdersDisplay({ onCountChange }) {
         <div>
           <h2 className="text-3xl font-bold text-gray-800">Commandes</h2>
           <p className="text-gray-600 mt-1">
-            {commandes.filter(c => c.statut !== 'Terminée').length} commande(s) en cours
+            {commandes.filter(c => c.statut !== 'Terminée').length} commande(s) en cours • Mise à jour en temps réel
           </p>
         </div>
         
@@ -209,7 +225,7 @@ function OrdersDisplay({ onCountChange }) {
               borderColor: autoRefresh ? APP_CONFIG.theme.success : '#d1d5db'
             }}
           >
-            {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+            {autoRefresh ? '🔄 Auto-refresh ON' : 'Auto-refresh OFF'}
           </button>
 
           <button
@@ -308,20 +324,39 @@ function OrdersDisplay({ onCountChange }) {
                     )}
 
                     {commande.statut === 'Terminée' && (
-                      <div className="flex-1 text-center font-semibold py-2" style={{ color: APP_CONFIG.theme.success }}>
-                        Commande terminée
-                      </div>
+                      <button 
+                        onClick={() => setSelectedCommande(commande)}
+                        className="flex-1 py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 text-white hover:opacity-90"
+                        style={{ backgroundColor: APP_CONFIG.theme.primary }}
+                      >
+                        <CreditCard size={18} />
+                        Paiement / Facture
+                      </button>
                     )}
                   </div>
 
-                  <button onClick={() => printFacture(commande)} className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center justify-center gap-2">
-                    <Printer size={18} />Imprimer la facture
-                  </button>
+                  {commande.statut !== 'Terminée' && (
+                    <button onClick={() => printFacture(commande)} className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center justify-center gap-2">
+                      <Printer size={18} />Imprimer la facture
+                    </button>
+                  )}
                 </div>
               </div>
             )
           })}
         </div>
+      )}
+
+      {/* Modal de paiement */}
+      {selectedCommande && (
+        <PaymentModal
+          commande={selectedCommande}
+          onClose={() => setSelectedCommande(null)}
+          onPaymentComplete={() => {
+            fetchCommandes(true)
+            setSelectedCommande(null)
+          }}
+        />
       )}
     </div>
   )

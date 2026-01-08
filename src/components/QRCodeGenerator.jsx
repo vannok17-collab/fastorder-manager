@@ -20,7 +20,7 @@ function QRCodeGenerator() {
     
     const renderQR = (QRCodeLib) => {
       QRCodeLib.toCanvas(canvas, url, {
-        width: 300,
+        width: 300, // Taille originale rétablie
         margin: 2,
         color: { dark: APP_CONFIG.theme.primary, light: '#ffffff' },
         errorCorrectionLevel: 'M'
@@ -44,7 +44,6 @@ function QRCodeGenerator() {
     }
   }, [baseUrl, nombreTables, generateQRCode])
 
-  // La fonction est maintenant utilisée plus bas
   const downloadQRCode = (tableNumber) => {
     const canvas = canvasRefs.current[tableNumber - 1]
     if (!canvas) return
@@ -74,51 +73,13 @@ function QRCodeGenerator() {
             border: 6px solid ${APP_CONFIG.theme.primary}; 
             border-radius: 50px;
           }
-          .logo { 
-            width: 150px; 
-            height: 150px; 
-            border-radius: 50%; 
-            border: 4px solid ${APP_CONFIG.theme.primary}; 
-            margin-bottom: 10px;
-          }
-          .slogan { 
-            font-size: 22px; 
-            color: #555; 
-            font-style: italic; 
-            font-weight: 500;
-            margin-bottom: 5px;
-          }
-          h1 { 
-            color: ${APP_CONFIG.theme.primary}; 
-            font-size: 34px; 
-            margin: 0 0 30px 0; 
-            font-weight: 900;
-            text-transform: uppercase;
-          }
-          .qr-wrapper { 
-            background: #fdfdfd;
-            padding: 20px;
-            border-radius: 20px;
-            display: inline-block;
-            border: 1px solid #eee;
-            margin-bottom: 20px;
-          }
+          .logo { width: 150px; height: 150px; border-radius: 50%; border: 4px solid ${APP_CONFIG.theme.primary}; margin-bottom: 10px; }
+          .slogan { font-size: 22px; color: #555; font-style: italic; font-weight: 500; margin-bottom: 5px; }
+          h1 { color: ${APP_CONFIG.theme.primary}; font-size: 34px; margin: 0 0 30px 0; font-weight: 900; text-transform: uppercase; }
+          .qr-wrapper { background: #fdfdfd; padding: 20px; border-radius: 20px; display: inline-block; border: 1px solid #eee; margin-bottom: 20px; }
           .qr-wrapper img { width: 320px; height: 320px; display: block; }
-          .instruction { 
-            font-size: 20px; 
-            font-weight: 600; 
-            color: #333; 
-            margin-bottom: 30px;
-          }
-          .footer { 
-            background-color: ${APP_CONFIG.theme.primary};
-            color: white;
-            padding: 15px;
-            border-radius: 20px;
-            font-size: 54px; 
-            font-weight: 900;
-            margin-top: 10px;
-          }
+          .instruction { font-size: 20px; font-weight: 600; color: #333; margin-bottom: 30px; }
+          .footer { background-color: ${APP_CONFIG.theme.primary}; color: white; padding: 15px; border-radius: 20px; font-size: 54px; font-weight: 900; }
         </style>
       </head>
       <body>
@@ -176,12 +137,15 @@ function QRCodeGenerator() {
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border-t-8 border-orange-500">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
-            <h2 className="text-4xl font-black text-gray-800 tracking-tight">DABALI XPRESS</h2>
-            <p className="text-orange-500 font-bold italic">A l'ivoirienne</p>
+            <h2 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
+              <QrCodeIcon size={40} className="text-orange-500" />
+              DABALI XPRESS
+            </h2>
+            <p className="text-orange-500 font-bold italic text-lg">A l'ivoirienne</p>
           </div>
           <div className="flex gap-4">
             <button onClick={printAllQRCodes} className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-4 rounded-2xl font-black shadow-lg transition-all flex items-center gap-2">
-              <Printer size={24} /> IMPRIMER TOUT
+              <Printer size={24} /> IMPRIMER LES TABLES
             </button>
           </div>
         </div>
@@ -194,17 +158,16 @@ function QRCodeGenerator() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {Array.from({ length: nombreTables }, (_, i) => i + 1).map((num) => (
           <div key={num} className="bg-white rounded-3xl shadow-md p-6 border border-gray-100 flex flex-col items-center">
-            <div className="bg-orange-500 text-white px-4 py-1 rounded-full text-xs font-black mb-4">TABLE {num}</div>
-            <div className="bg-gray-50 p-3 rounded-2xl mb-4">
+            <div className="bg-orange-500 text-white px-4 py-1 rounded-full text-xs font-black mb-4 uppercase tracking-widest">TABLE {num}</div>
+            <div className="bg-gray-50 p-3 rounded-2xl mb-6 shadow-inner">
               <canvas ref={(el) => (canvasRefs.current[num - 1] = el)} className="w-full h-auto" />
             </div>
-            <div className="flex gap-2 w-full">
-              {/* Utilisation de downloadQRCode ici pour enlever l'erreur ESLint */}
-              <button onClick={() => downloadQRCode(num)} className="flex-1 py-2 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs hover:bg-gray-200 uppercase transition-colors">
-                Image
+            <div className="grid grid-cols-1 gap-3 w-full">
+              <button onClick={() => downloadQRCode(num)} className="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                <Download size={18} /> TÉLÉCHARGER
               </button>
-              <button onClick={() => printQRCode(num)} className="flex-[2] py-2 bg-gray-900 text-white rounded-xl font-bold text-xs hover:bg-orange-600 uppercase transition-colors">
-                Imprimer
+              <button onClick={() => printQRCode(num)} className="w-full py-3 bg-gray-500 text-white rounded-xl font-bold hover:bg-gray-600 transition-colors flex items-center justify-center gap-2">
+                <Printer size={18} /> IMPRIMER
               </button>
             </div>
           </div>
