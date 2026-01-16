@@ -120,7 +120,7 @@ function QRCodeGenerator() {
         htmlContent += `
           <div class="qr-card">
             <img src="${APP_CONFIG.restaurant.logo}" class="logo-mini" />
-            <div class="slogan-mini">A l'ivoirienne</div>
+            <div class="slogan-mini">${APP_CONFIG.restaurant.slogan}</div>
             <h3>${APP_CONFIG.restaurant.nom}</h3>
             <img src="${canvas.toDataURL()}" class="qr" />
             <div class="footer-mini">TABLE ${i}</div>
