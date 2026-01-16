@@ -138,10 +138,10 @@ function QRCodeGenerator() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
             <h2 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
-              <QrCodeIcon size={40} className="text-orange-500" />
-              DABALI XPRESS
+              <QrCodeIcon size={40} className={APP_CONFIG.theme.primary} />
+              ${APP_CONFIG.restaurant.nom}
             </h2>
-            <p className="text-orange-500 font-bold italic text-lg">A l'ivoirienne</p>
+            <p className="text-orange-500 font-bold italic text-lg">${APP_CONFIG.restaurant.slogan}</p>
           </div>
           <div className="flex gap-4">
             <button onClick={printAllQRCodes} className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-4 rounded-2xl font-black shadow-lg transition-all flex items-center gap-2">
