@@ -211,7 +211,7 @@ function OrdersDisplay({ onCountChange }) {
         <div>
           <h2 className="text-3xl font-bold text-gray-800">Commandes</h2>
           <p className="text-gray-600 mt-1">
-            {commandes.filter(c => c.statut !== 'Terminée').length} commande(s) en cours • Mise à jour en temps réel
+            {commandes.filter(c => c.statut !== 'Terminée').length} commande(s) en cours
           </p>
         </div>
         
@@ -268,6 +268,21 @@ function OrdersDisplay({ onCountChange }) {
                     <div>
                       <h3 className="font-bold text-lg text-gray-800">Table {commande.numero_table}</h3>
                       <p className="text-xs text-gray-600">{new Date(commande.created_at).toLocaleString('fr-FR')}</p>
+                      {commande.contact && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          📧 {commande.contact}
+                        </p>
+                      )}
+                      {commande.mode_paiement && (
+                        <p className="text-xs font-semibold mt-1" style={{ color: APP_CONFIG.theme.primary }}>
+                          💳 {commande.mode_paiement === 'especes' ? 'Espèces' : 
+                              commande.mode_paiement === 'wave' ? 'Wave' :
+                              commande.mode_paiement === 'orange_money' ? 'Orange Money' :
+                              commande.mode_paiement === 'mtn_momo' ? 'MTN MoMo' :
+                              commande.mode_paiement === 'moov_money' ? 'Moov Money' :
+                              commande.mode_paiement === 'carte' ? 'Carte' : commande.mode_paiement}
+                        </p>
+                      )}
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-bold border-2 flex items-center gap-1 ${
                       commande.statut === 'En attente' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :

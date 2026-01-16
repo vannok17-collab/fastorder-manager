@@ -1,21 +1,10 @@
 // fastorder-manager/src/components/PaymentModal.jsx
-import { useState } from 'react'
-import { Mail, Smartphone, X, Send, Printer, CheckCircle } from 'lucide-react'
+import { Printer, X } from 'lucide-react'
 import { APP_CONFIG } from '../config'
 
 function PaymentModal({ commande, onClose, onPaymentComplete }) {
-  const [step, setStep] = useState('choice') // 'choice', 'email', 'payment', 'success'
-  const [email, setEmail] = useState('')
-  const [phoneNumber, setPhoneNumber] = useState('')
-  const [selectedPayment, setSelectedPayment] = useState(null)
-  const [loading, setLoading] = useState(false)
-
-  const paymentMethods = [
-    { id: 'wave', name: 'Wave', icon: '📱', color: '#00D9B1', code: '*144#' },
-    { id: 'orange', name: 'Orange Money', icon: '🟠', color: '#FF6600', code: '#144#' },
-    { id: 'mtn', name: 'MTN MoMo', icon: '💛', color: '#FFCC00', code: '*133#' },
-    { id: 'moov', name: 'Moov Money', icon: '🔵', color: '#0066CC', code: '*155#' }
-  ]
+  
+  const clientContact = commande.contact || ''
 
   const generateInvoiceHTML = () => {
     const items = commande.commandes_items
@@ -89,37 +78,26 @@ function PaymentModal({ commande, onClose, onPaymentComplete }) {
   }
 
   const sendInvoiceByEmail = async () => {
-    if (!email || !email.includes('@')) {
-      alert('❌ Veuillez entrer une adresse email valide')
+    if (!clientContact) {
+      alert('❌ Aucun contact client trouvé dans la commande')
+      return
+    }
+
+    if (!isEmail) {
+      alert('❌ Le client a fourni un numéro de téléphone, pas un email. Envoi par SMS non disponible pour le moment.')
       return
     }
 
     setLoading(true)
 
     try {
-      // TODO: Intégrer un service d'email (Resend, SendGrid, Brevo...)
-      // Exemple avec Resend : https://resend.com/docs/send-with-nodejs
-      
-      // Pour l'instant, on simule l'envoi
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
       const invoiceHTML = generateInvoiceHTML()
       
-      console.log('📧 Envoi de la facture à:', email)
+      console.log('📧 Envoi de la facture à:', clientContact)
       console.log('HTML:', invoiceHTML)
       
-      // Appeler votre API backend pour envoyer l'email
-      /*
-      await fetch('/api/send-invoice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: email,
-          html: invoiceHTML,
-          subject: `Facture ${commande.id.slice(0, 8)} - ${APP_CONFIG.restaurant.nom}`
-        })
-      })
-      */
+      // TODO: Appeler votre API backend pour envoyer l'email
+      await new Promise(resolve => setTimeout(resolve, 2000))
       
       setStep('success')
       setTimeout(() => {
@@ -207,10 +185,7 @@ function PaymentModal({ commande, onClose, onPaymentComplete }) {
         >
           <div>
             <h2 className="text-2xl font-bold text-white">
-              {step === 'choice' && '💳 Paiement'}
-              {step === 'email' && '📧 Envoi par Email'}
-              {step === 'payment' && '📱 Paiement Mobile'}
-              {step === 'success' && '✅ Succès'}
+              💳 Facture & Paiement
             </h2>
             <p className="text-white/80 text-sm mt-1">
               Table {commande.numero_table} • {commande.montant_total.toLocaleString()} {APP_CONFIG.options.deviseMonnaie}
@@ -222,207 +197,53 @@ function PaymentModal({ commande, onClose, onPaymentComplete }) {
         </div>
 
         <div className="p-6">
-          {/* Étape 1 : Choix */}
-          {step === 'choice' && (
-            <div className="space-y-4">
-              <p className="text-gray-600 mb-6">Choisissez comment finaliser la commande :</p>
-              
-              <button
-                onClick={printInvoice}
-                className="w-full p-6 rounded-2xl border-2 border-gray-200 hover:border-gray-400 transition-all flex items-center gap-4 bg-gray-50 hover:bg-gray-100"
-              >
-                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Printer size={32} className="text-blue-600" />
+          {/* Infos commande + Bouton imprimer */}
+          <div className="space-y-6">
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+              <p className="text-blue-800 font-semibold mb-3">ℹ️ Informations commande</p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Contact :</span>
+                  <span className="font-bold">{clientContact || 'Non fourni'}</span>
                 </div>
-                <div className="flex-1 text-left">
-                  <h3 className="font-bold text-lg text-gray-800">Imprimer la facture</h3>
-                  <p className="text-gray-600 text-sm">Imprimer et donner au client</p>
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Mode de paiement :</span>
+                  <span className="font-bold">{
+                    commande.mode_paiement === 'especes' ? '💵 Espèces' :
+                    commande.mode_paiement === 'wave' ? '📱 Wave' :
+                    commande.mode_paiement === 'orange_money' ? '🟠 Orange Money' :
+                    commande.mode_paiement === 'mtn_momo' ? '💛 MTN MoMo' :
+                    commande.mode_paiement === 'moov_money' ? '🔵 Moov Money' :
+                    commande.mode_paiement === 'carte' ? '💳 Carte' : 
+                    commande.mode_paiement || 'Non spécifié'
+                  }</span>
                 </div>
-              </button>
-
-              <button
-                onClick={() => setStep('email')}
-                className="w-full p-6 rounded-2xl border-2 transition-all flex items-center gap-4 hover:shadow-lg"
-                style={{ 
-                  borderColor: APP_CONFIG.theme.primary,
-                  backgroundColor: `${APP_CONFIG.theme.primary}10`
-                }}
-              >
-                <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: `${APP_CONFIG.theme.primary}20` }}
-                >
-                  <Mail size={32} style={{ color: APP_CONFIG.theme.primary }} />
-                </div>
-                <div className="flex-1 text-left">
-                  <h3 className="font-bold text-lg text-gray-800">Envoyer par email</h3>
-                  <p className="text-gray-600 text-sm">Le client recevra la facture par email</p>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setStep('payment')}
-                className="w-full p-6 rounded-2xl border-2 transition-all flex items-center gap-4 hover:shadow-lg"
-                style={{ 
-                  borderColor: APP_CONFIG.theme.success,
-                  backgroundColor: `${APP_CONFIG.theme.success}10`
-                }}
-              >
-                <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: `${APP_CONFIG.theme.success}20` }}
-                >
-                  <Smartphone size={32} style={{ color: APP_CONFIG.theme.success }} />
-                </div>
-                <div className="flex-1 text-left">
-                  <h3 className="font-bold text-lg text-gray-800">Paiement mobile</h3>
-                  <p className="text-gray-600 text-sm">Wave, Orange Money, MTN, Moov</p>
-                </div>
-              </button>
-            </div>
-          )}
-
-          {/* Étape 2 : Email */}
-          {step === 'email' && (
-            <div className="space-y-6">
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2">
-                  Email du client
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="exemple@email.com"
-                  className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2"
-                  style={{ borderColor: APP_CONFIG.theme.primary }}
-                  disabled={loading}
-                />
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setStep('choice')}
-                  className="flex-1 py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
-                  disabled={loading}
-                >
-                  Retour
-                </button>
-                <button
-                  onClick={sendInvoiceByEmail}
-                  disabled={loading}
-                  className="flex-1 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 text-white"
-                  style={{ backgroundColor: APP_CONFIG.theme.primary }}
-                >
-                  {loading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                      Envoi...
-                    </>
-                  ) : (
-                    <>
-                      <Send size={20} />
-                      Envoyer la facture
-                    </>
-                  )}
-                </button>
               </div>
             </div>
-          )}
 
-          {/* Étape 3 : Paiement */}
-          {step === 'payment' && (
-            <div className="space-y-6">
-              <div>
-                <label className="block text-gray-700 font-semibold mb-3">
-                  Mode de paiement
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {paymentMethods.map(method => (
-                    <button
-                      key={method.id}
-                      onClick={() => setSelectedPayment(method)}
-                      className={`p-4 rounded-xl border-2 transition-all ${
-                        selectedPayment?.id === method.id ? 'ring-4' : ''
-                      }`}
-                      style={{
-                        borderColor: selectedPayment?.id === method.id ? method.color : '#e5e7eb',
-                        backgroundColor: selectedPayment?.id === method.id ? `${method.color}10` : 'white',
-                        ringColor: `${method.color}40`
-                      }}
-                    >
-                      <div className="text-3xl mb-2">{method.icon}</div>
-                      <div className="font-bold text-sm">{method.name}</div>
-                      <div className="text-xs text-gray-500 mt-1">{method.code}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {selectedPayment && (
-                <div>
-                  <label className="block text-gray-700 font-semibold mb-2">
-                    Numéro de téléphone
-                  </label>
-                  <input
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="07 XX XX XX XX"
-                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2"
-                    style={{ borderColor: selectedPayment.color }}
-                    disabled={loading}
-                  />
-                  <p className="text-sm text-gray-500 mt-2">
-                    Le client recevra une demande de paiement sur son téléphone
-                  </p>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setStep('choice')}
-                  className="flex-1 py-3 rounded-xl font-semibold bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
-                  disabled={loading}
-                >
-                  Retour
-                </button>
-                <button
-                  onClick={initiatePayment}
-                  disabled={loading || !selectedPayment}
-                  className="flex-1 py-3 rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 text-white"
-                  style={{ backgroundColor: APP_CONFIG.theme.success }}
-                >
-                  {loading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                      Traitement...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={20} />
-                      Initier le paiement
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Étape 4 : Succès */}
-          {step === 'success' && (
-            <div className="text-center py-12">
-              <div className="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center animate-bounce"
-                style={{ backgroundColor: `${APP_CONFIG.theme.success}20` }}
-              >
-                <CheckCircle size={48} style={{ color: APP_CONFIG.theme.success }} />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                ✅ Opération réussie !
-              </h3>
-              <p className="text-gray-600">
-                La facture a été traitée avec succès
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-4">
+              <p className="text-green-800 font-semibold mb-2">✅ Le client peut voir sa facture</p>
+              <p className="text-sm text-green-700">
+                La facture est disponible dans l'onglet "Factures" de l'application client
               </p>
             </div>
-          )}
+
+            <button
+              onClick={printInvoice}
+              className="w-full p-6 rounded-2xl border-2 transition-all flex items-center gap-4 hover:shadow-lg bg-blue-50 hover:bg-blue-100"
+              style={{ borderColor: APP_CONFIG.theme.primary }}
+            >
+              <div className="w-16 h-16 rounded-full flex items-center justify-center bg-white"
+                style={{ color: APP_CONFIG.theme.primary }}
+              >
+                <Printer size={32} />
+              </div>
+              <div className="flex-1 text-left">
+                <h3 className="font-bold text-lg text-gray-800">Imprimer la facture</h3>
+                <p className="text-gray-600 text-sm">Pour vos archives</p>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
     </div>
