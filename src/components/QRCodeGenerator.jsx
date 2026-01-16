@@ -85,7 +85,7 @@ function QRCodeGenerator() {
       <body>
         <div class="container">
           <img src="${APP_CONFIG.restaurant.logo}" class="logo" />
-          <div class="slogan">A l'ivoirienne</div>
+          <div class="slogan">${APP_CONFIG.restaurant.slogan}</div>
           <h1>${APP_CONFIG.restaurant.nom}</h1>
           <div class="qr-wrapper"><img src="${imgData}" /></div>
           <div class="instruction">📱 Scannez pour commander</div>
@@ -125,6 +125,7 @@ function QRCodeGenerator() {
             <img src="${canvas.toDataURL()}" class="qr" />
             <div class="footer-mini">TABLE ${i}</div>
           </div>`
+
       }
     }
     htmlContent += `<script>window.onload = () => { window.print(); setTimeout(() => window.close(), 500); }</script></body></html>`
@@ -134,17 +135,17 @@ function QRCodeGenerator() {
 
   return (
     <div className="p-6">
-      <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border-t-8 border-orange-500">
+      <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border-t-8 ${APP_CONFIG.theme.primary}">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="text-center md:text-left">
             <h2 className="text-4xl font-black text-gray-800 tracking-tight flex items-center gap-3">
-              <QrCodeIcon size={40} className={APP_CONFIG.theme.primary} />
-              ${APP_CONFIG.restaurant.nom}
+              <QrCodeIcon size={40} className="${APP_CONFIG.theme.primary}" />
+              {APP_CONFIG.restaurant.nom}
             </h2>
-            <p className="text-orange-500 font-bold italic text-lg">${APP_CONFIG.restaurant.slogan}</p>
+            <p className="${APP_CONFIG.theme.primary} font-bold italic text-lg">{APP_CONFIG.restaurant.slogan}</p>
           </div>
           <div className="flex gap-4">
-            <button onClick={printAllQRCodes} className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-4 rounded-2xl font-black shadow-lg transition-all flex items-center gap-2">
+            <button onClick={printAllQRCodes} className="${APP_CONFIG.theme.primary} hover:${APP_CONFIG.theme.primary} text-white px-8 py-4 rounded-2xl font-black shadow-lg transition-all flex items-center gap-2">
               <Printer size={24} /> IMPRIMER LES TABLES
             </button>
           </div>
@@ -158,12 +159,12 @@ function QRCodeGenerator() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {Array.from({ length: nombreTables }, (_, i) => i + 1).map((num) => (
           <div key={num} className="bg-white rounded-3xl shadow-md p-6 border border-gray-100 flex flex-col items-center">
-            <div className="bg-orange-500 text-white px-4 py-1 rounded-full text-xs font-black mb-4 uppercase tracking-widest">TABLE {num}</div>
+            <div className="${APP_CONFIG.theme.primary} text-white px-4 py-1 rounded-full text-xs font-black mb-4 uppercase tracking-widest">TABLE {num}</div>
             <div className="bg-gray-50 p-3 rounded-2xl mb-6 shadow-inner">
               <canvas ref={(el) => (canvasRefs.current[num - 1] = el)} className="w-full h-auto" />
             </div>
             <div className="grid grid-cols-1 gap-3 w-full">
-              <button onClick={() => downloadQRCode(num)} className="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+              <button onClick={() => downloadQRCode(num)} className="w-full py-3 ${APP_CONFIG.theme.primary} text-white rounded-xl font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
                 <Download size={18} /> TÉLÉCHARGER
               </button>
               <button onClick={() => printQRCode(num)} className="w-full py-3 bg-gray-500 text-white rounded-xl font-bold hover:bg-gray-600 transition-colors flex items-center justify-center gap-2">
