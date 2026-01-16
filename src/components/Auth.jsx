@@ -118,7 +118,7 @@ function Auth({ onAuth }) {
             {!isLogin && (
               <>
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
+                  <label className=" text-gray-700 font-semibold mb-2 flex items-center gap-2">
                     <Store size={18} />
                     Nom du restaurant
                   </label>
@@ -134,7 +134,7 @@ function Auth({ onAuth }) {
                 </div>
 
                 <div>
-                  <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
+                  <label className=" text-gray-700 font-semibold mb-2 flex items-center gap-2">
                     <Store size={18} />
                     ID du restaurant (sans espaces)
                   </label>
@@ -155,7 +155,7 @@ function Auth({ onAuth }) {
             )}
 
             <div>
-              <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
+              <label className=" text-gray-700 font-semibold mb-2 flex items-center gap-2">
                 <Mail size={18} />
                 Email
               </label>
@@ -171,7 +171,7 @@ function Auth({ onAuth }) {
             </div>
 
             <div>
-              <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
+              <label className=" text-gray-700 font-semibold mb-2 flex items-center gap-2">
                 <Lock size={18} />
                 Mot de passe
               </label>
