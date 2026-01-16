@@ -6,6 +6,7 @@ import { APP_CONFIG } from './config'
 import MenuManager from './components/MenuManager'
 import OrdersDisplay from './components/OrdersDisplay'
 import QRCodeGenerator from './components/QRCodeGenerator'
+import Auth from './components/Auth'
 import './App.css'
 
 function App() {
@@ -32,12 +33,6 @@ function App() {
           </div>
           <p className="text-gray-700 font-bold text-xl mb-2">
             {APP_CONFIG.restaurant.nom}
-          </p>
-          <p className="text-gray-500">
-            🎨 Chargement du thème personnalisé...
-          </p>
-          <p className="text-gray-400 text-sm mt-2">
-            Mode Administrateur
           </p>
         </div>
       </div>
